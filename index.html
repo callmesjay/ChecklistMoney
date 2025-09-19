@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>บันทึกรายรับ-รายจ่าย</title>
+        <link rel="manifest" href="/manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #EFE8E0;
+            color: #4E7CB2;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #4E7CB2;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+
+        nav button {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #EFE8E0;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            color: #4E7CB2;
+            transition: background-color 0.3s;
+        }
+
+        nav button.active {
+            background-color: #94C2DA;
+            color: white;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .balance-card, .summary-period-selector {
+            background: #94C2DA;
+            padding: 18px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 25px;
+            border: 1px solid #75a4c0;
+            color: white;
+        }
+
+        #balance {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0 0;
+        }
+
+        #transaction-form, .summary-period-selector {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        #transaction-form input,
+        #transaction-form select {
+            font-family: 'Sarabun', sans-serif;
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #EFE8E0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        #transaction-form input:focus,
+        #transaction-form select:focus {
+            outline: none;
+            border-color: #94C2DA;
+        }
+
+        #transaction-form button {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #4E7CB2;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        #transaction-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #transaction-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 6px solid;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+        }
+
+        #transaction-list li.income {
+            border-color: #94C2DA;
+        }
+
+        #transaction-list li.expense {
+            border-color: #E7A0CC;
+        }
+
+        .transaction-details {
+            flex-grow: 1;
+            padding-right: 10px;
+        }
+
+        .transaction-details span {
+            font-weight: 600;
+        }
+
+        .transaction-details small {
+            display: block;
+            color: #718096;
+            font-size: 0.85em;
+        }
+
+        .transaction-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .transaction-amount {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .transaction-amount.income {
+            color: #4E7CB2;
+        }
+
+        .transaction-amount.expense {
+            color: #E7A0CC;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #E7A0CC;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav>
+            <button id="nav-home" class="active">หน้าหลัก</button>
+            <button id="nav-summary">สรุป</button>
+        </nav>
+
+        <div id="home-section" class="section active">
+            <h1>บันทึกรายรับ-รายจ่าย</h1>
+            <div class="balance-card">
+                <h3>ยอดเงินคงเหลือ</h3>
+                <p id="balance">0.00 บาท</p>
+            </div>
+            <form id="transaction-form">
+                <input type="hidden" id="edit-index">
+                <input type="text" id="description" placeholder="รายละเอียด" required>
+                <input type="number" id="amount" placeholder="จำนวนเงิน" required>
+                <input type="date" id="date-input" required>
+                <select id="type" required>
+                    <option value="income">รายรับ</option>
+                    <option value="expense">รายจ่าย</option>
+                </select>
+                <button type="submit" id="submit-btn">บันทึก</button>
+            </form>
+            <ul id="transaction-list"></ul>
+        </div>
+
+        <div id="summary-section" class="section">
+            <h1>สรุปรายรับ-รายจ่าย</h1>
+            <div class="summary-period-selector">
+                <select id="period-select">
+                    <option value="week">รายสัปดาห์</option>
+                    <option value="half-month">ครึ่งเดือน</option>
+                    <option value="month">รายเดือน</option>
+                </select>
+            </div>
+            <canvas id="bar-chart"></canvas>
+            <canvas id="pie-chart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navHomeBtn = document.getElementById('nav-home');
+            const navSummaryBtn = document.getElementById('nav-summary');
+            const homeSection = document.getElementById('home-section');
+            const summarySection = document.getElementById('summary-section');
+            const periodSelect = document.getElementById('period-select');
+
+            const transactionForm = document.getElementById('transaction-form');
+            const transactionList = document.getElementById('transaction-list');
+            const balanceElement = document.getElementById('balance');
+            const descriptionInput = document.getElementById('description');
+            const amountInput = document.getElementById('amount');
+            const dateInput = document.getElementById('date-input');
+            const typeInput = document.getElementById('type');
+            const submitButton = document.getElementById('submit-btn');
+            const editIndexInput = document.getElementById('edit-index');
+
+            let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+            let barChart, pieChart;
+            
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
+
+            function saveTransactions() {
+                localStorage.setItem('transactions', JSON.stringify(transactions));
+            }
+
+            function renderTransactions() {
+                transactionList.innerHTML = '';
+                let balance = 0;
+                transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+                transactions.forEach((transaction, index) => {
+                    const li = document.createElement('li');
+                    li.classList.add(transaction.type);
+                    li.setAttribute('data-index', index);
+                    const sign = transaction.type === 'income' ? '+' : '-';
+                    const amount = transaction.type === 'income' ? transaction.amount : -transaction.amount;
+                    balance += amount;
+                    
+                    const transactionDate = new Date(transaction.date);
+                    const formattedDate = transactionDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                    li.innerHTML = `
+                        <div class="transaction-details">
+                            <span>${transaction.description}</span><br>
+                            <small>${formattedDate}</small>
+                        </div>
+                        <div class="transaction-actions">
+                            <span class="transaction-amount ${transaction.type}">
+                                ${sign} ${Math.abs(transaction.amount).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
+                            </span>
+                            <button class="delete-btn">🗑️</button>
+                        </div>
+                    `;
+                    li.querySelector('.transaction-details').addEventListener('click', () => editTransaction(index));
+                    li.querySelector('.delete-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteTransaction(index);
+                    });
+                    transactionList.appendChild(li);
+                });
+                balanceElement.textContent = `${balance.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`;
+                balanceElement.style.color = balance >= 0 ? '#4E7CB2' : '#E7A0CC';
+            }
+
+            function editTransaction(index) {
+                const transactionToEdit = transactions[index];
+                descriptionInput.value = transactionToEdit.description;
+                amountInput.value = transactionToEdit.amount;
+                typeInput.value = transactionToEdit.type;
+                dateInput.value = transactionToEdit.date.split('T')[0];
+                editIndexInput.value = index;
+                submitButton.textContent = 'แก้ไขรายการ';
+            }
+
+            function deleteTransaction(index) {
+                if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?')) {
+                    transactions.splice(index, 1);
+                    saveTransactions();
+                    renderTransactions();
+                    resetForm();
+                }
+            }
+
+            function resetForm() {
+                descriptionInput.value = '';
+                amountInput.value = '';
+                dateInput.value = new Date().toISOString().split('T')[0];
+                editIndexInput.value = '';
+                submitButton.textContent = 'บันทึก';
+            }
+
+            function filterTransactionsByPeriod(period) {
+                const now = new Date();
+                const filtered = transactions.filter(t => {
+                    const transactionDate = new Date(t.date);
+                    if (period === 'week') {
+                        const firstDayOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+                        return transactionDate >= firstDayOfWeek;
+                    }
+                    if (period === 'half-month') {
+                        const firstDayOfHalf = now.getDate() <= 15 ? 1 : 16;
+                        const startOfHalf = new Date(now.getFullYear(), now.getMonth(), firstDayOfHalf);
+                        return transactionDate >= startOfHalf;
+                    }
+                    if (period === 'month') {
+                        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                        return transactionDate >= startOfMonth;
+                    }
+                    return false;
+                });
+                return filtered;
+            }
+
+            function updateSummary() {
+                const period = periodSelect.value;
+                const filteredTransactions = filterTransactionsByPeriod(period);
+                
+                const summary = { income: 0, expense: 0, labels: [], data: [] };
+                filteredTransactions.forEach(t => {
+                    if (t.type === 'income') {
+                        summary.income += t.amount;
+                    } else {
+                        summary.expense += t.amount;
+                    }
+                });
+
+                summary.labels = ['รายรับ', 'รายจ่าย'];
+                summary.data = [summary.income, summary.expense];
+
+                updateBarChart(summary);
+                updatePieChart(summary);
+            }
+
+            function updateBarChart(summary) {
+                if (barChart) {
+                    barChart.destroy();
+                }
+                const ctx = document.getElementById('bar-chart').getContext('2d');
+                barChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: summary.labels,
+                        datasets: [{
+                            label: 'จำนวนเงิน (บาท)',
+                            data: summary.data,
+                            backgroundColor: ['#94C2DA', '#E7A0CC'],
+                            borderColor: ['#94C2DA', '#E7A0CC'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            function updatePieChart(summary) {
+                if (pieChart) {
+                    pieChart.destroy();
+                }
+                const ctx = document.getElementById('pie-chart').getContext('2d');
+                pieChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: summary.labels,
+                        datasets: [{
+                            label: 'สัดส่วน',
+                            data: summary.data,
+                            backgroundColor: ['#94C2DA', '#E7A0CC'],
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true
+                    }
+                });
+            }
+
+            navHomeBtn.addEventListener('click', () => {
+                homeSection.classList.add('active');
+                summarySection.classList.remove('active');
+                navHomeBtn.classList.add('active');
+                navSummaryBtn.classList.remove('active');
+            });
+
+            navSummaryBtn.addEventListener('click', () => {
+                summarySection.classList.add('active');
+                homeSection.classList.remove('active');
+                navSummaryBtn.classList.add('active');
+                navHomeBtn.classList.remove('active');
+                updateSummary();
+            });
+
+            periodSelect.addEventListener('change', updateSummary);
+
+            transactionForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const description = descriptionInput.value.trim();
+                const amount = parseFloat(amountInput.value);
+                const date = dateInput.value;
+                const type = typeInput.value;
+                const indexToEdit = editIndexInput.value;
+
+                if (description && !isNaN(amount) && amount > 0 && date) {
+                    const newTransaction = {
+                        description,
+                        amount,
+                        type,
+                        date: new Date(date).toISOString()
+                    };
+                    if (indexToEdit) {
+                        transactions[indexToEdit] = newTransaction;
+                    } else {
+                        transactions.unshift(newTransaction);
+                    }
+                    saveTransactions();
+                    renderTransactions();
+                    resetForm();
+                } else {
+                    alert('กรุณากรอกข้อมูลให้ถูกต้องและครบถ้วน!');
+                }
+            });
+
+            renderTransactions();
+        });
+    </script>
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(registration => {
+                    console.log('Service Worker registered! Scope:', registration.scope);
+                })
+                .catch(err => {
+                    console.log('Service Worker registration failed:', err);
+                });
+        });
+    }
+</script>
+</body>
+</html>
