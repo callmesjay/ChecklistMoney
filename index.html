@@ -20,7 +20,7 @@
         }
         .container {
             width: 100%;
-            max-width: 600px;
+            max-width: 800px;
             margin: auto;
             padding: 20px;
             background: #ffffff;
@@ -73,7 +73,7 @@
             font-weight: bold;
             margin: 10px 0 0;
         }
-        #transaction-form, .summary-period-selector {
+        #transaction-form {
             display: grid;
             gap: 12px;
             margin-bottom: 25px;
@@ -105,61 +105,47 @@
             font-size: 1.1em;
             font-weight: bold;
         }
-        #transaction-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
+        .transaction-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
         }
-        #transaction-list li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #ffffff;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border-left: 6px solid;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            cursor: pointer;
+        .transaction-table th, .transaction-table td {
+            border: 1px solid #EFE8E0;
+            padding: 10px;
+            text-align: left;
         }
-        #transaction-list li.income {
-            border-color: #94C2DA;
-        }
-        #transaction-list li.expense {
-            border-color: #E7A0CC;
-        }
-        .transaction-details {
-            flex-grow: 1;
-            padding-right: 10px;
-        }
-        .transaction-details span {
-            font-weight: 600;
-        }
-        .transaction-details small {
-            display: block;
-            color: #718096;
-            font-size: 0.85em;
-        }
-        .transaction-actions {
-            display: flex;
-            gap: 10px;
-        }
-        .transaction-amount {
+        .transaction-table th {
+            background-color: #94C2DA;
+            color: white;
             font-weight: bold;
-            font-size: 1.1em;
+        }
+        .transaction-table tr:nth-child(even) {
+            background-color: #f7f7f7;
         }
         .transaction-amount.income {
             color: #4E7CB2;
+            font-weight: bold;
         }
         .transaction-amount.expense {
             color: #E7A0CC;
+            font-weight: bold;
         }
-        .delete-btn {
+        .transaction-actions {
+            white-space: nowrap;
+        }
+        .edit-btn, .delete-btn {
             background: none;
             border: none;
-            color: #E7A0CC;
-            font-size: 1.2em;
             cursor: pointer;
+            font-size: 1.2em;
+            margin-left: 5px;
+        }
+        .edit-btn {
+            color: #4E7CB2;
+        }
+        .delete-btn {
+            color: #E7A0CC;
         }
         #install-button {
             font-family: 'Sarabun', sans-serif;
@@ -181,6 +167,24 @@
             text-align: center;
             color: #4E7CB2;
             margin-bottom: 15px;
+        }
+        .io-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .io-buttons button {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #4E7CB2;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            flex-grow: 1;
         }
     </style>
 </head>
@@ -209,7 +213,24 @@
                 </select>
                 <button type="submit" id="submit-btn">บันทึก</button>
             </form>
-            <ul id="transaction-list"></ul>
+            <table class="transaction-table">
+                <thead>
+                    <tr>
+                        <th>วันที่</th>
+                        <th>รายละเอียด</th>
+                        <th>หมวดหมู่</th>
+                        <th>จำนวนเงิน</th>
+                        <th>ประเภท</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="transaction-list"></tbody>
+            </table>
+            <div class="io-buttons">
+                <button id="export-btn">ส่งออกข้อมูล</button>
+                <input type="file" id="import-file" style="display: none;">
+                <button id="import-btn">นำเข้าข้อมูล</button>
+            </div>
         </div>
         <div id="summary-section" class="section">
             <h1>สรุปรายรับ-รายจ่าย</h1>
@@ -234,13 +255,11 @@
     <script>
         let deferredPrompt;
         const installButton = document.getElementById('install-button');
-
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             installButton.style.display = 'block';
         });
-
         installButton.addEventListener('click', (e) => {
             installButton.style.display = 'none';
             deferredPrompt.prompt();
@@ -253,10 +272,8 @@
                 deferredPrompt = null;
             });
         });
-
         const TELEGRAM_BOT_TOKEN = '8307015098:AAGKpiBiyzCbEV4S1E3z3WjrV99QbPiJm3c';
-        const TELEGRAM_CHAT_ID = '8150639165';
-
+        const TELEGRAM_CHAT_ID = '-4823160378';
         function sendTelegramNotification(message) {
             if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
                 console.error('กรุณาตั้งค่า Telegram Bot Token และ Chat ID');
@@ -280,14 +297,12 @@
             })
             .catch(error => console.error('เกิดข้อผิดพลาดในการส่งแจ้งเตือน:', error));
         }
-
         document.addEventListener('DOMContentLoaded', () => {
             const navHomeBtn = document.getElementById('nav-home');
             const navSummaryBtn = document.getElementById('nav-summary');
             const homeSection = document.getElementById('home-section');
             const summarySection = document.getElementById('summary-section');
             const periodSelect = document.getElementById('period-select');
-
             const transactionForm = document.getElementById('transaction-form');
             const transactionList = document.getElementById('transaction-list');
             const balanceElement = document.getElementById('balance');
@@ -298,55 +313,43 @@
             const typeInput = document.getElementById('type');
             const submitButton = document.getElementById('submit-btn');
             const editIndexInput = document.getElementById('edit-index');
-
+            const exportBtn = document.getElementById('export-btn');
+            const importBtn = document.getElementById('import-btn');
+            const importFile = document.getElementById('import-file');
             let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
             let barChart, incomePieChart, expensePieChart;
-            
             const today = new Date().toISOString().split('T')[0];
             dateInput.value = today;
-
             function saveTransactions() {
                 localStorage.setItem('transactions', JSON.stringify(transactions));
             }
-
             function renderTransactions() {
                 transactionList.innerHTML = '';
                 let balance = 0;
                 transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
                 transactions.forEach((transaction, index) => {
-                    const li = document.createElement('li');
-                    li.classList.add(transaction.type);
-                    li.setAttribute('data-index', index);
                     const sign = transaction.type === 'income' ? '+' : '-';
                     const amount = transaction.type === 'income' ? transaction.amount : -transaction.amount;
                     balance += amount;
-                    
                     const transactionDate = new Date(transaction.date);
-                    const formattedDate = transactionDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
-
-                    li.innerHTML = `
-                        <div class="transaction-details">
-                            <span>${transaction.description} (${transaction.category})</span><br>
-                            <small>${formattedDate}</small>
-                        </div>
-                        <div class="transaction-actions">
-                            <span class="transaction-amount ${transaction.type}">
-                                ${sign} ${Math.abs(transaction.amount).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
-                            </span>
-                            <button class="delete-btn">🗑️</button>
-                        </div>
+                    const formattedDate = transactionDate.toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${formattedDate}</td>
+                        <td>${transaction.description}</td>
+                        <td>${transaction.category}</td>
+                        <td class="transaction-amount ${transaction.type}">${sign} ${Math.abs(transaction.amount).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท</td>
+                        <td>${transaction.type === 'income' ? 'รายรับ' : 'รายจ่าย'}</td>
+                        <td class="transaction-actions">
+                            <button class="edit-btn" data-index="${index}">✏️</button>
+                            <button class="delete-btn" data-index="${index}">🗑️</button>
+                        </td>
                     `;
-                    li.querySelector('.transaction-details').addEventListener('click', () => editTransaction(index));
-                    li.querySelector('.delete-btn').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        deleteTransaction(index);
-                    });
-                    transactionList.appendChild(li);
+                    transactionList.appendChild(row);
                 });
                 balanceElement.textContent = `${balance.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท`;
                 balanceElement.style.color = balance >= 0 ? '#4E7CB2' : '#E7A0CC';
             }
-
             function editTransaction(index) {
                 const transactionToEdit = transactions[index];
                 descriptionInput.value = transactionToEdit.description;
@@ -357,7 +360,6 @@
                 editIndexInput.value = index;
                 submitButton.textContent = 'แก้ไขรายการ';
             }
-
             function deleteTransaction(index) {
                 if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?')) {
                     transactions.splice(index, 1);
@@ -366,7 +368,6 @@
                     resetForm();
                 }
             }
-
             function resetForm() {
                 descriptionInput.value = '';
                 categoryInput.value = '';
@@ -375,7 +376,6 @@
                 editIndexInput.value = '';
                 submitButton.textContent = 'บันทึก';
             }
-
             function filterTransactionsByPeriod(period) {
                 const now = new Date();
                 const filtered = transactions.filter(t => {
@@ -397,15 +397,12 @@
                 });
                 return filtered;
             }
-
             function updateSummary() {
                 const period = periodSelect.value;
                 const filteredTransactions = filterTransactionsByPeriod(period);
-                
                 const summary = { income: 0, expense: 0, labels: [], data: [] };
                 const incomeCategories = {};
                 const expenseCategories = {};
-
                 filteredTransactions.forEach(t => {
                     if (t.type === 'income') {
                         summary.income += t.amount;
@@ -415,14 +412,11 @@
                         expenseCategories[t.category] = (expenseCategories[t.category] || 0) + t.amount;
                     }
                 });
-
                 summary.labels = ['รายรับ', 'รายจ่าย'];
                 summary.data = [summary.income, summary.expense];
-
                 updateBarChart(summary);
                 updateCategoryCharts(incomeCategories, expenseCategories);
             }
-
             function updateBarChart(summary) {
                 if (barChart) {
                     barChart.destroy();
@@ -450,10 +444,8 @@
                     }
                 });
             }
-
             function updateCategoryCharts(incomeData, expenseData) {
                 const colors = ['#94C2DA', '#E7A0CC', '#EFE8E0', '#4E7CB2', '#f39c12', '#2ecc71', '#3498db', '#9b59b6', '#e67e22', '#1abc9c'];
-
                 if (incomePieChart) {
                     incomePieChart.destroy();
                 }
@@ -472,7 +464,6 @@
                         responsive: true
                     }
                 });
-
                 if (expensePieChart) {
                     expensePieChart.destroy();
                 }
@@ -492,14 +483,12 @@
                     }
                 });
             }
-
             navHomeBtn.addEventListener('click', () => {
                 homeSection.classList.add('active');
                 summarySection.classList.remove('active');
                 navHomeBtn.classList.add('active');
                 navSummaryBtn.classList.remove('active');
             });
-
             navSummaryBtn.addEventListener('click', () => {
                 summarySection.classList.add('active');
                 homeSection.classList.remove('active');
@@ -507,9 +496,7 @@
                 navHomeBtn.classList.remove('active');
                 updateSummary();
             });
-
             periodSelect.addEventListener('change', updateSummary);
-
             transactionForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const description = descriptionInput.value.trim();
@@ -518,7 +505,6 @@
                 const date = dateInput.value;
                 const type = typeInput.value;
                 const indexToEdit = editIndexInput.value;
-
                 if (description && category && !isNaN(amount) && amount > 0 && date) {
                     const newTransaction = {
                         description,
@@ -527,7 +513,6 @@
                         type,
                         date: new Date(date).toISOString()
                     };
-                    
                     if (indexToEdit) {
                         transactions[indexToEdit] = newTransaction;
                         const notificationMessage = `📝 แก้ไขรายการ: ${description} จำนวน ${amount.toLocaleString()} บาท`;
@@ -538,13 +523,64 @@
                         const notificationMessage = `💰 เพิ่มรายการ ${transactionType} (${category}): ${description} จำนวน ${amount.toLocaleString()} บาท`;
                         sendTelegramNotification(notificationMessage);
                     }
-                    
                     saveTransactions();
                     renderTransactions();
                     resetForm();
                 } else {
                     alert('กรุณากรอกข้อมูลให้ถูกต้องและครบถ้วน!');
                 }
+            });
+            document.getElementById('transaction-list').addEventListener('click', (e) => {
+                const target = e.target;
+                const row = target.closest('tr');
+                if (!row) return;
+                const rowIndex = Array.from(row.parentNode.children).indexOf(row);
+                if (target.classList.contains('edit-btn')) {
+                    editTransaction(rowIndex);
+                } else if (target.classList.contains('delete-btn')) {
+                    deleteTransaction(rowIndex);
+                }
+            });
+
+            // ฟังก์ชันสำหรับ Export ข้อมูล
+            exportBtn.addEventListener('click', () => {
+                const dataStr = JSON.stringify(transactions, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `transactions_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            // ฟังก์ชันสำหรับ Import ข้อมูล
+            importBtn.addEventListener('click', () => {
+                importFile.click();
+            });
+
+            importFile.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const importedTransactions = JSON.parse(event.target.result);
+                        if (Array.isArray(importedTransactions)) {
+                            transactions = importedTransactions;
+                            saveTransactions();
+                            renderTransactions();
+                            alert('นำเข้าข้อมูลสำเร็จ!');
+                        } else {
+                            alert('ไฟล์ที่นำเข้ามีรูปแบบไม่ถูกต้อง');
+                        }
+                    } catch (error) {
+                        alert('เกิดข้อผิดพลาดในการอ่านไฟล์: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
             });
 
             renderTransactions();
