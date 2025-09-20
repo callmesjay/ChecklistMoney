@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>บันทึกรายรับ-รายจ่าย</title>
-        <link rel="manifest" href="/manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -18,7 +18,6 @@
             padding: 20px;
             line-height: 1.6;
         }
-
         .container {
             width: 100%;
             max-width: 600px;
@@ -28,20 +27,17 @@
             border-radius: 15px;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
-
         h1 {
             text-align: center;
             color: #4E7CB2;
             margin-bottom: 25px;
             font-size: 1.8em;
         }
-
         nav {
             display: flex;
             justify-content: space-around;
             margin-bottom: 20px;
         }
-
         nav button {
             font-family: 'Sarabun', sans-serif;
             background-color: #EFE8E0;
@@ -53,20 +49,16 @@
             color: #4E7CB2;
             transition: background-color 0.3s;
         }
-
         nav button.active {
             background-color: #94C2DA;
             color: white;
         }
-
         .section {
             display: none;
         }
-
         .section.active {
             display: block;
         }
-
         .balance-card, .summary-period-selector {
             background: #94C2DA;
             padding: 18px;
@@ -76,19 +68,16 @@
             border: 1px solid #75a4c0;
             color: white;
         }
-
         #balance {
             font-size: 2.5em;
             font-weight: bold;
             margin: 10px 0 0;
         }
-
         #transaction-form, .summary-period-selector {
             display: grid;
             gap: 12px;
             margin-bottom: 25px;
         }
-
         #transaction-form input,
         #transaction-form select {
             font-family: 'Sarabun', sans-serif;
@@ -100,13 +89,11 @@
             font-size: 1em;
             transition: border-color 0.3s;
         }
-
         #transaction-form input:focus,
         #transaction-form select:focus {
             outline: none;
             border-color: #94C2DA;
         }
-
         #transaction-form button {
             font-family: 'Sarabun', sans-serif;
             background-color: #4E7CB2;
@@ -118,13 +105,11 @@
             font-size: 1.1em;
             font-weight: bold;
         }
-
         #transaction-list {
             list-style: none;
             padding: 0;
             margin: 0;
         }
-
         #transaction-list li {
             display: flex;
             justify-content: space-between;
@@ -137,54 +122,65 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
             cursor: pointer;
         }
-
         #transaction-list li.income {
             border-color: #94C2DA;
         }
-
         #transaction-list li.expense {
             border-color: #E7A0CC;
         }
-
         .transaction-details {
             flex-grow: 1;
             padding-right: 10px;
         }
-
         .transaction-details span {
             font-weight: 600;
         }
-
         .transaction-details small {
             display: block;
             color: #718096;
             font-size: 0.85em;
         }
-
         .transaction-actions {
             display: flex;
             gap: 10px;
         }
-
         .transaction-amount {
             font-weight: bold;
             font-size: 1.1em;
         }
-
         .transaction-amount.income {
             color: #4E7CB2;
         }
-
         .transaction-amount.expense {
             color: #E7A0CC;
         }
-
         .delete-btn {
             background: none;
             border: none;
             color: #E7A0CC;
             font-size: 1.2em;
             cursor: pointer;
+        }
+        #install-button {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #E7A0CC;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 10px auto;
+            display: block;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .chart-container {
+            margin-top: 30px;
+        }
+        .chart-container h3 {
+            text-align: center;
+            color: #4E7CB2;
+            margin-bottom: 15px;
         }
     </style>
 </head>
@@ -194,7 +190,7 @@
             <button id="nav-home" class="active">หน้าหลัก</button>
             <button id="nav-summary">สรุป</button>
         </nav>
-
+        <button id="install-button" style="display: none;">ติดตั้งแอปพลิเคชัน</button>
         <div id="home-section" class="section active">
             <h1>บันทึกรายรับ-รายจ่าย</h1>
             <div class="balance-card">
@@ -204,6 +200,7 @@
             <form id="transaction-form">
                 <input type="hidden" id="edit-index">
                 <input type="text" id="description" placeholder="รายละเอียด" required>
+                <input type="text" id="category" placeholder="หมวดหมู่ (เช่น ค่าอาหาร, เงินเดือน)" required>
                 <input type="number" id="amount" placeholder="จำนวนเงิน" required>
                 <input type="date" id="date-input" required>
                 <select id="type" required>
@@ -214,7 +211,6 @@
             </form>
             <ul id="transaction-list"></ul>
         </div>
-
         <div id="summary-section" class="section">
             <h1>สรุปรายรับ-รายจ่าย</h1>
             <div class="summary-period-selector">
@@ -225,11 +221,66 @@
                 </select>
             </div>
             <canvas id="bar-chart"></canvas>
-            <canvas id="pie-chart"></canvas>
+            <div class="chart-container">
+                <h3>สัดส่วนรายรับตามหมวดหมู่</h3>
+                <canvas id="income-pie-chart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>สัดส่วนรายจ่ายตามหมวดหมู่</h3>
+                <canvas id="expense-pie-chart"></canvas>
+            </div>
         </div>
     </div>
-
     <script>
+        let deferredPrompt;
+        const installButton = document.getElementById('install-button');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installButton.style.display = 'block';
+        });
+
+        installButton.addEventListener('click', (e) => {
+            installButton.style.display = 'none';
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                } else {
+                    console.log('User dismissed the install prompt');
+                }
+                deferredPrompt = null;
+            });
+        });
+
+        const TELEGRAM_BOT_TOKEN = '8307015098:AAGKpiBiyzCbEV4S1E3z3WjrV99QbPiJm3c';
+        const TELEGRAM_CHAT_ID = '8150639165';
+
+        function sendTelegramNotification(message) {
+            if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+                console.error('กรุณาตั้งค่า Telegram Bot Token และ Chat ID');
+                return;
+            }
+            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+            const params = new URLSearchParams({
+                'chat_id': TELEGRAM_CHAT_ID,
+                'text': message
+            });
+            fetch(url, {
+                method: 'POST',
+                body: params
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('ส่งการแจ้งเตือน Telegram สำเร็จ');
+                } else {
+                    console.error('ส่งการแจ้งเตือน Telegram ไม่สำเร็จ');
+                }
+            })
+            .catch(error => console.error('เกิดข้อผิดพลาดในการส่งแจ้งเตือน:', error));
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const navHomeBtn = document.getElementById('nav-home');
             const navSummaryBtn = document.getElementById('nav-summary');
@@ -241,6 +292,7 @@
             const transactionList = document.getElementById('transaction-list');
             const balanceElement = document.getElementById('balance');
             const descriptionInput = document.getElementById('description');
+            const categoryInput = document.getElementById('category');
             const amountInput = document.getElementById('amount');
             const dateInput = document.getElementById('date-input');
             const typeInput = document.getElementById('type');
@@ -248,7 +300,7 @@
             const editIndexInput = document.getElementById('edit-index');
 
             let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-            let barChart, pieChart;
+            let barChart, incomePieChart, expensePieChart;
             
             const today = new Date().toISOString().split('T')[0];
             dateInput.value = today;
@@ -274,7 +326,7 @@
 
                     li.innerHTML = `
                         <div class="transaction-details">
-                            <span>${transaction.description}</span><br>
+                            <span>${transaction.description} (${transaction.category})</span><br>
                             <small>${formattedDate}</small>
                         </div>
                         <div class="transaction-actions">
@@ -298,6 +350,7 @@
             function editTransaction(index) {
                 const transactionToEdit = transactions[index];
                 descriptionInput.value = transactionToEdit.description;
+                categoryInput.value = transactionToEdit.category;
                 amountInput.value = transactionToEdit.amount;
                 typeInput.value = transactionToEdit.type;
                 dateInput.value = transactionToEdit.date.split('T')[0];
@@ -316,6 +369,7 @@
 
             function resetForm() {
                 descriptionInput.value = '';
+                categoryInput.value = '';
                 amountInput.value = '';
                 dateInput.value = new Date().toISOString().split('T')[0];
                 editIndexInput.value = '';
@@ -349,11 +403,16 @@
                 const filteredTransactions = filterTransactionsByPeriod(period);
                 
                 const summary = { income: 0, expense: 0, labels: [], data: [] };
+                const incomeCategories = {};
+                const expenseCategories = {};
+
                 filteredTransactions.forEach(t => {
                     if (t.type === 'income') {
                         summary.income += t.amount;
+                        incomeCategories[t.category] = (incomeCategories[t.category] || 0) + t.amount;
                     } else {
                         summary.expense += t.amount;
+                        expenseCategories[t.category] = (expenseCategories[t.category] || 0) + t.amount;
                     }
                 });
 
@@ -361,7 +420,7 @@
                 summary.data = [summary.income, summary.expense];
 
                 updateBarChart(summary);
-                updatePieChart(summary);
+                updateCategoryCharts(incomeCategories, expenseCategories);
             }
 
             function updateBarChart(summary) {
@@ -392,19 +451,39 @@
                 });
             }
 
-            function updatePieChart(summary) {
-                if (pieChart) {
-                    pieChart.destroy();
+            function updateCategoryCharts(incomeData, expenseData) {
+                const colors = ['#94C2DA', '#E7A0CC', '#EFE8E0', '#4E7CB2', '#f39c12', '#2ecc71', '#3498db', '#9b59b6', '#e67e22', '#1abc9c'];
+
+                if (incomePieChart) {
+                    incomePieChart.destroy();
                 }
-                const ctx = document.getElementById('pie-chart').getContext('2d');
-                pieChart = new Chart(ctx, {
+                const incomeCtx = document.getElementById('income-pie-chart').getContext('2d');
+                incomePieChart = new Chart(incomeCtx, {
                     type: 'pie',
                     data: {
-                        labels: summary.labels,
+                        labels: Object.keys(incomeData),
                         datasets: [{
-                            label: 'สัดส่วน',
-                            data: summary.data,
-                            backgroundColor: ['#94C2DA', '#E7A0CC'],
+                            data: Object.values(incomeData),
+                            backgroundColor: Object.keys(incomeData).map((_, i) => colors[i % colors.length]),
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true
+                    }
+                });
+
+                if (expensePieChart) {
+                    expensePieChart.destroy();
+                }
+                const expenseCtx = document.getElementById('expense-pie-chart').getContext('2d');
+                expensePieChart = new Chart(expenseCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(expenseData),
+                        datasets: [{
+                            data: Object.values(expenseData),
+                            backgroundColor: Object.keys(expenseData).map((_, i) => colors[i % colors.length]),
                             hoverOffset: 4
                         }]
                     },
@@ -434,23 +513,32 @@
             transactionForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const description = descriptionInput.value.trim();
+                const category = categoryInput.value.trim();
                 const amount = parseFloat(amountInput.value);
                 const date = dateInput.value;
                 const type = typeInput.value;
                 const indexToEdit = editIndexInput.value;
 
-                if (description && !isNaN(amount) && amount > 0 && date) {
+                if (description && category && !isNaN(amount) && amount > 0 && date) {
                     const newTransaction = {
                         description,
+                        category,
                         amount,
                         type,
                         date: new Date(date).toISOString()
                     };
+                    
                     if (indexToEdit) {
                         transactions[indexToEdit] = newTransaction;
+                        const notificationMessage = `📝 แก้ไขรายการ: ${description} จำนวน ${amount.toLocaleString()} บาท`;
+                        sendTelegramNotification(notificationMessage);
                     } else {
                         transactions.unshift(newTransaction);
+                        const transactionType = type === 'income' ? 'รายรับ' : 'รายจ่าย';
+                        const notificationMessage = `💰 เพิ่มรายการ ${transactionType} (${category}): ${description} จำนวน ${amount.toLocaleString()} บาท`;
+                        sendTelegramNotification(notificationMessage);
                     }
+                    
                     saveTransactions();
                     renderTransactions();
                     resetForm();
@@ -462,18 +550,5 @@
             renderTransactions();
         });
     </script>
-<script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/service-worker.js')
-                .then(registration => {
-                    console.log('Service Worker registered! Scope:', registration.scope);
-                })
-                .catch(err => {
-                    console.log('Service Worker registration failed:', err);
-                });
-        });
-    }
-</script>
 </body>
 </html>
